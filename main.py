@@ -6,17 +6,20 @@ from datetime import datetime, timedelta  # ✅ Fixes the error you had
 API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
 DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'
 
-MIN_PREMIUM = 250              # Total order size ($2.50 × 1–3 contracts)
+# === FILTERS ===
+MIN_PREMIUM = 50
+MAX_PREMIUM = 300
 MAX_EXPIRY_DAYS = 30
-TICKERS_TO_INCLUDE = []        # Leave empty to allow all tickers
+MIN_VOLUME = 500
+MIN_SIZE = 10
+TICKERS_TO_INCLUDE = []  # e.g. ['SPY', 'QQQ'] or leave empty for all
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
     headers = {
-        'Authorization': f'Bearer {API_KEY}',
+        'Authorization': f'Bearer ' + API_KEY,
         'Accept': 'application/json'
     }
-
     response = requests.get(url, headers=headers)
     print("Status Code:", response.status_code)
     print("Response Preview:", response.text[:200])
@@ -27,60 +30,86 @@ def get_flow_data():
         return {}
 
 def send_to_discord(signal):
-    msg = f"📢 **{signal['direction']} Alert**\n" \
-          f"**Ticker:** {signal['ticker']}\n" \
-          f"**Strike:** {signal['strike']} | **Exp:** {signal['expiration']}\n" \
-          f"**Est. Premium:** ${signal['premium']:,}"
+    msg = f"📢 **{signal['direction']} Sweep Alert**\n" \
+          f"**{signal['ticker']}** | Strike: {signal['strike']} | Exp: {signal['expiration']}\n" \
+          f"Premium: ${signal['premium']} | Spot: ${signal['spot']} | Δ: {signal['delta']} | Size: {signal['size']} | Vol: {signal['volume']}"
     payload = {"content": msg}
     try:
         requests.post(DISCORD_WEBHOOK, json=payload)
         print("✅ Sent to Discord:", msg)
     except Exception as e:
-        print("❌ Failed to send to Discord:", e)
+        print("❌ Discord error:", e)
 
 def filter_and_alert():
     data = get_flow_data()
     if not data or 'data' not in data:
-        print("⚠️ No valid flow data returned.")
+        print("⚠️ No valid data.")
         return
 
-    for trade in data['data'][:20]:
+    for trade in data['data'][:25]:
         try:
+            # Required fields
             ticker = trade['ticker'].upper()
-            premium_estimate = float(trade['ask']) * 100
-            expiry_str = trade['expiry']
+            option_type = trade['type'].lower()
+            strike = float(trade['strike'])
+            expiry = trade['expiry']
+            spot = float(trade['underlying_price'])
+            delta = float(trade['greeks']['delta']) if trade.get('greeks') else None
+            ask = float(trade['ask'])
+            premium = ask * 100
+            volume = int(trade['volume'])
+            size = int(trade['size'])
+            has_sweep = trade.get('has_sweep', False)
 
-            # Validate expiry
-            if not expiry_str:
+            # Basic checks
+            if not expiry or not delta:
                 continue
-            expiry_date = datetime.strptime(expiry_str, '%Y-%m-%d')
+            expiry_date = datetime.strptime(expiry, '%Y-%m-%d')
             days_to_expiry = (expiry_date - datetime.now()).days
-            if days_to_expiry > MAX_EXPIRY_DAYS or days_to_expiry < 0:
+            if days_to_expiry < 0 or days_to_expiry > MAX_EXPIRY_DAYS:
                 continue
 
-            # Filters
-            if premium_estimate < MIN_PREMIUM:
+            if premium < MIN_PREMIUM or premium > MAX_PREMIUM:
+                continue
+            if volume < MIN_VOLUME or size <= MIN_SIZE:
                 continue
             if TICKERS_TO_INCLUDE and ticker not in TICKERS_TO_INCLUDE:
                 continue
-            if 'has_sweep' not in trade or not trade['has_sweep']:
+            if not has_sweep:
                 continue
-            # ✅ Removed is_otm filter to allow ATM/ITM trades
 
+            # Directional delta check
+            if option_type == 'call' and delta < 0.3:
+                continue
+            if option_type == 'put' and delta > -0.3:
+                continue
+
+            # Avoid ITM contracts
+            if option_type == 'call' and strike < spot:
+                continue
+            if option_type == 'put' and strike > spot:
+                continue
+
+            # Passed all filters
             signal = {
-                "direction": trade['type'].upper(),
-                "strike": str(trade['strike']),
-                "expiration": expiry_str,
+                "direction": option_type.upper(),
+                "strike": strike,
+                "expiration": expiry,
                 "ticker": ticker,
-                "premium": premium_estimate
+                "premium": round(premium, 2),
+                "spot": round(spot, 2),
+                "delta": round(delta, 2),
+                "volume": volume,
+                "size": size
             }
             send_to_discord(signal)
 
         except Exception as e:
-            print(f"⚠️ Error: {e}")
+            print(f"⚠️ Error parsing trade: {e}")
 
+# === LOOP ===
 while True:
-    print("🔄 Checking for new signals...")
+    print("🔄 Checking for flow...")
     filter_and_alert()
     print("⏳ Waiting 5 minutes...\n")
     time.sleep(300)
