@@ -2,11 +2,11 @@ import requests
 import time
 
 # === CONFIGURATION ===
-API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'  # <--- Replace this
-DISCORD_WEBHOOK = 'https://discordapp.com/api/webhooks/1371355612444885052/IBGwbDM4r7267UCb-IrkrXbgk1TYFWHbt1eAwcv2CugrCMJ9DJjK5g00f5vUSochQxQh'  # <--- Replace this
+API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'  # <-- Replace with your API key
+DISCORD_WEBHOOK = 'https://discordapp.com/api/webhooks/1371355612444885052/IBGwbDM4r7267UCb-IrkrXbgk1TYFWHbt1eAwcv2CugrCMJ9DJjK5g00f5vUSochQxQh'  # <-- Replace with your Discord webhook
 
 def get_flow_data():
-    url = 'https://api.unusualwhales.com/v2/flow'
+    url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
     headers = {
         'Authorization': f'Bearer {API_KEY}',
         'Accept': 'application/json'
@@ -14,7 +14,7 @@ def get_flow_data():
 
     response = requests.get(url, headers=headers)
     print("Status Code:", response.status_code)
-    print("Response Text:", response.text[:200])  # limit to first 200 chars for readability
+    print("Response Preview:", response.text[:200])
 
     try:
         return response.json()
@@ -34,7 +34,7 @@ def send_to_discord(signal):
         res = requests.post(DISCORD_WEBHOOK, json=payload)
         print("✅ Sent to Discord:", msg)
     except Exception as e:
-        print("❌ Discord send failed:", e)
+        print("❌ Failed to send to Discord:", e)
 
 def filter_and_alert():
     data = get_flow_data()
@@ -58,7 +58,7 @@ def filter_and_alert():
             }
             send_to_discord(signal)
 
-# Loop every 5 minutes
+# === Loop every 5 minutes ===
 while True:
     print("🔄 Checking for new signals...")
     filter_and_alert()
