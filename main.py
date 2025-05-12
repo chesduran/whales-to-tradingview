@@ -5,7 +5,7 @@ API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
 DISCORD_WEBHOOK = 'https://discordapp.com/api/webhooks/1371355612444885052/IBGwbDM4r7267UCb-IrkrXbgk1TYFWHbt1eAwcv2CugrCMJ9DJjK5g00f5vUSochQxQh'
 
 def get_flow_data():
-    url = 'https://api.unusualwhales.com/api/flow'
+    url = 'url = 'https://api.unusualwhales.com/v2/flow'
     headers = {
         'Authorization': f'Bearer {API_KEY}',
         'accept': 'application/json'
