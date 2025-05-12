@@ -14,7 +14,7 @@ def get_flow_data():
 
     response = requests.get(url, headers=headers)
     print("Status Code:", response.status_code)
-    print("Response Preview:", response.text[:200])
+    print("Response Preview:", response.text[:200])  # Show preview for debugging
 
     try:
         return response.json()
@@ -42,17 +42,22 @@ def filter_and_alert():
         print("⚠️ No valid flow data returned.")
         return
 
-    for trade in data['data'][:3]:  # TEMP: test first 3 trades
-        signal = {
-            "direction": trade['option_type'].upper(),
-            "strike": str(trade['strike']),
-            "expiration": trade['exp'],
-            "ticker": trade['ticker'],
-            "premium": float(trade['ask']) * 100
-        }
-        send_to_discord(signal)
+    for trade in data['data'][:3]:  # TEMP: test with first 3 trades
+        try:
+            signal = {
+                "direction": trade['call_or_put'].upper(),
+                "strike": str(trade['strike']),
+                "expiration": trade['expiration'],
+                "ticker": trade['ticker'],
+                "premium": float(trade['ask']) * 100  # Estimate total premium
+            }
+            send_to_discord(signal)
+        except KeyError as e:
+            print(f"⚠️ Skipping trade due to missing key: {e}")
+        except Exception as e:
+            print(f"⚠️ Error parsing trade: {e}")
 
-# === Loop every 5 minutes ===
+# === LOOP Every 5 minutes ===
 while True:
     print("🔄 Checking for new signals...")
     filter_and_alert()
