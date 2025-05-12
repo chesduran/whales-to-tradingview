@@ -6,7 +6,7 @@ API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'  # <-- Replace with your API ke
 DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'  # <-- Replace with your webhook
 
 # === FILTERS ===
-MIN_PREMIUM = 25000       # Only alert if estimated premium > $100k
+MIN_PREMIUM = 10000       # Only alert if estimated premium > $100k
 TICKERS_TO_INCLUDE = [SPY', 'QQQ', 'TSLA', 'AAPL', 'NVDA', 'MSFT', 'AMD', 'NFLX']    # Leave empty to include all; or use e.g. ['SPY', 'QQQ', 'TSLA']
 
 def get_flow_data():
