@@ -7,7 +7,7 @@ DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_r
 
 # === FILTERS ===
 MIN_PREMIUM = 2500       # Only alert if estimated premium > $100k
-TICKERS_TO_INCLUDE = ['SPY', 'QQQ', 'TSLA', 'AAPL', 'NVDA', 'MSFT', 'AMD', 'NFLX']    # Leave empty to include all; or use e.g. ['SPY', 'QQQ', 'TSLA']
+TICKERS_TO_INCLUDE = []    # Leave empty to include all; or use e.g. ['SPY', 'QQQ', 'TSLA']
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
