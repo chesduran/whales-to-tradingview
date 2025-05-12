@@ -3,7 +3,7 @@ import time
 
 # === CONFIGURATION ===
 API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'  # <-- Replace with your API key
-DISCORD_WEBHOOK = 'https://discordapp.com/api/webhooks/1371355612444885052/IBGwbDM4r7267UCb-IrkrXbgk1TYFWHbt1eAwcv2CugrCMJ9DJjK5g00f5vUSochQxQh'  # <-- Replace with your Discord webhook
+DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'  # <-- Replace with your Discord webhook
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
