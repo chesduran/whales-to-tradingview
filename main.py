@@ -12,12 +12,12 @@ MAX_PREMIUM = 300
 MAX_EXPIRY_DAYS = 30
 MIN_VOLUME = 500
 MIN_SIZE = 10
-TICKERS_TO_INCLUDE = []  # e.g. ['SPY', 'QQQ'] or leave empty for all
+TICKERS_TO_INCLUDE = []  # e.g. ['SPY', 'QQQ'] — leave empty for all
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
     headers = {
-        'Authorization': f'Bearer ' + API_KEY,
+        'Authorization': f'Bearer {API_KEY}',
         'Accept': 'application/json'
     }
     response = requests.get(url, headers=headers)
@@ -43,7 +43,7 @@ def send_to_discord(signal):
 def filter_and_alert():
     data = get_flow_data()
     if not data or 'data' not in data:
-        print("⚠️ No valid data.")
+        print("⚠️ No valid flow data.")
         return
 
     for trade in data['data'][:25]:
@@ -51,19 +51,20 @@ def filter_and_alert():
             # Required fields
             ticker = trade['ticker'].upper()
             option_type = trade['type'].lower()
-            strike = float(trade['strike'])
-            expiry = trade['expiry']
-            spot = float(trade['underlying_price'])
-            delta = float(trade['greeks']['delta']) if trade.get('greeks') else None
-            ask = float(trade['ask'])
+            strike = float(trade.get('strike', 0))
+            expiry = trade.get('expiry')
+            spot = float(trade.get('underlying_price', 0))
+            delta = float(trade.get('greeks', {}).get('delta', 0))
+            ask = float(trade.get('ask', 0))
             premium = ask * 100
-            volume = int(trade['volume'])
-            size = int(trade['size'])
+            volume = int(trade.get('volume', 0))
+            size = int(trade.get('size', 0))
             has_sweep = trade.get('has_sweep', False)
 
-            # Basic checks
-            if not expiry or not delta:
+            # Skip if required fields are missing
+            if not expiry or not strike or not spot or not ask:
                 continue
+
             expiry_date = datetime.strptime(expiry, '%Y-%m-%d')
             days_to_expiry = (expiry_date - datetime.now()).days
             if days_to_expiry < 0 or days_to_expiry > MAX_EXPIRY_DAYS:
@@ -78,13 +79,13 @@ def filter_and_alert():
             if not has_sweep:
                 continue
 
-            # Directional delta check
+            # Delta filter
             if option_type == 'call' and delta < 0.3:
                 continue
             if option_type == 'put' and delta > -0.3:
                 continue
 
-            # Avoid ITM contracts
+            # OTM / ATM only (skip ITM)
             if option_type == 'call' and strike < spot:
                 continue
             if option_type == 'put' and strike > spot:
@@ -109,7 +110,7 @@ def filter_and_alert():
 
 # === LOOP ===
 while True:
-    print("🔄 Checking for flow...")
+    print("🔄 Checking for high-quality sweep flow...")
     filter_and_alert()
     print("⏳ Waiting 5 minutes...\n")
     time.sleep(300)
