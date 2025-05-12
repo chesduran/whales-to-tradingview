@@ -6,10 +6,9 @@ from datetime import datetime, timedelta  # ✅ Fixes the error you had
 API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
 DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'
 
-# === FILTERS ===
-MIN_PREMIUM = 250             # $2.50 per contract
-MAX_EXPIRY_DAYS = 30          # Max 30 days till expiration
-TICKERS_TO_INCLUDE = []       # Leave empty for all; or add ['SPY', 'QQQ']
+MIN_PREMIUM = 250              # Total order size ($2.50 × 1–3 contracts)
+MAX_EXPIRY_DAYS = 30
+TICKERS_TO_INCLUDE = []        # Leave empty to allow all tickers
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
@@ -28,11 +27,10 @@ def get_flow_data():
         return {}
 
 def send_to_discord(signal):
-    msg = f"📢 **{signal['direction']} Sweep Alert**\n" \
+    msg = f"📢 **{signal['direction']} Alert**\n" \
           f"**Ticker:** {signal['ticker']}\n" \
-          f"**Strike:** {signal['strike']}\n" \
-          f"**Exp:** {signal['expiration']}\n" \
-          f"**Premium:** ${signal['premium']:,}"
+          f"**Strike:** {signal['strike']} | **Exp:** {signal['expiration']}\n" \
+          f"**Est. Premium:** ${signal['premium']:,}"
     payload = {"content": msg}
     try:
         requests.post(DISCORD_WEBHOOK, json=payload)
@@ -52,7 +50,7 @@ def filter_and_alert():
             premium_estimate = float(trade['ask']) * 100
             expiry_str = trade['expiry']
 
-            # Parse and validate expiration
+            # Validate expiry
             if not expiry_str:
                 continue
             expiry_date = datetime.strptime(expiry_str, '%Y-%m-%d')
@@ -60,17 +58,15 @@ def filter_and_alert():
             if days_to_expiry > MAX_EXPIRY_DAYS or days_to_expiry < 0:
                 continue
 
-            # Apply filters
+            # Filters
             if premium_estimate < MIN_PREMIUM:
                 continue
             if TICKERS_TO_INCLUDE and ticker not in TICKERS_TO_INCLUDE:
                 continue
             if 'has_sweep' not in trade or not trade['has_sweep']:
                 continue
-            if 'is_otm' not in trade or not trade['is_otm']:
-                continue
+            # ✅ Removed is_otm filter to allow ATM/ITM trades
 
-            # Send alert
             signal = {
                 "direction": trade['type'].upper(),
                 "strike": str(trade['strike']),
@@ -80,12 +76,9 @@ def filter_and_alert():
             }
             send_to_discord(signal)
 
-        except KeyError as e:
-            print(f"⚠️ Missing key: {e}")
         except Exception as e:
             print(f"⚠️ Error: {e}")
 
-# === LOOP ===
 while True:
     print("🔄 Checking for new signals...")
     filter_and_alert()
