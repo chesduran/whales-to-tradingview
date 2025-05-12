@@ -1,6 +1,6 @@
 services:
-  - type: web
-    name: whales-to-tv
+  - type: worker
+    name: whales-discord-bot
     env: python
     plan: free
     buildCommand: ""
