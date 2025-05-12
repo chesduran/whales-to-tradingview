@@ -1,14 +1,15 @@
 import requests
 import time
+from datetime import datetime, timedelta  # ✅ Fixes the error you had
 
 # === CONFIGURATION ===
-API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'  # <-- Replace with your API key
-DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'  # <-- Replace with your webhook
+API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
+DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1371367462750392340/9OhaBo_rrmWzs3HDhEy-1DrgmBu05WO3vOnfJFy62oCgvD52HsOE1grwvU6m4WegTSyd'
 
 # === FILTERS ===
-MIN_PREMIUM = 250             # Minimum estimated premium in dollars
-MAX_EXPIRY_DAYS = 30          # Only options expiring within 30 days
-TICKERS_TO_INCLUDE = []       # Add tickers like ['SPY', 'QQQ'], or leave empty for all
+MIN_PREMIUM = 250             # $2.50 per contract
+MAX_EXPIRY_DAYS = 30          # Max 30 days till expiration
+TICKERS_TO_INCLUDE = []       # Leave empty for all; or add ['SPY', 'QQQ']
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/option-trades/flow-alerts'
@@ -50,22 +51,26 @@ def filter_and_alert():
             ticker = trade['ticker'].upper()
             premium_estimate = float(trade['ask']) * 100
             expiry_str = trade['expiry']
+
+            # Parse and validate expiration
+            if not expiry_str:
+                continue
             expiry_date = datetime.strptime(expiry_str, '%Y-%m-%d')
             days_to_expiry = (expiry_date - datetime.now()).days
-
-            # === FILTERS ===
             if days_to_expiry > MAX_EXPIRY_DAYS or days_to_expiry < 0:
                 continue
+
+            # Apply filters
             if premium_estimate < MIN_PREMIUM:
                 continue
             if TICKERS_TO_INCLUDE and ticker not in TICKERS_TO_INCLUDE:
                 continue
-            if not trade.get('has_sweep', False):
-                continue  # Skip if not a sweep
-            if not trade.get('is_otm', False):
-                continue  # Skip if not out-of-the-money
+            if 'has_sweep' not in trade or not trade['has_sweep']:
+                continue
+            if 'is_otm' not in trade or not trade['is_otm']:
+                continue
 
-            # === SEND SIGNAL ===
+            # Send alert
             signal = {
                 "direction": trade['type'].upper(),
                 "strike": str(trade['strike']),
