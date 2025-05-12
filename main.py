@@ -3,7 +3,7 @@ import time
 
 # === CONFIGURATION ===
 API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
-DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/your_webhook_here'
+DISCORD_WEBHOOK = 'https://discordapp.com/api/webhooks/1371345743885107270/Kup2etPLVwuefTaG2AQXsl1LAtXLnJS8Ck0LAeKHkdcJzJzKTaCqMH0UKvYZ_HeSS3dh'
 
 def get_flow_data():
     url = 'https://api.unusualwhales.com/api/flow'
