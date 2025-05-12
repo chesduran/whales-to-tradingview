@@ -1,7 +1,7 @@
 import requests
 import time
 
-API_KEY = 715d277b-9f59-404d-ae75-be71e6d7baac
+API_KEY = '715d277b-9f59-404d-ae75-be71e6d7baac'
 TRADINGVIEW_WEBHOOK = 'https://your-tradingview-webhook.com'  # Replace with your real TradingView webhook
 
 def get_flow_data():
