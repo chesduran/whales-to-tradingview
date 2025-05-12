@@ -42,21 +42,15 @@ def filter_and_alert():
         print("⚠️ No valid flow data returned.")
         return
 
-    for trade in data['data']:
-        if (
-            trade['type'] == 'sweep' and
-            trade['premium'] > 100000 and
-            trade['is_otm'] and
-            trade['option_type'] in ['call', 'put']
-        ):
-            signal = {
-                "direction": trade['option_type'].upper(),
-                "strike": str(trade['strike_price']),
-                "expiration": trade['expiration'],
-                "ticker": trade['ticker'],
-                "premium": trade['premium']
-            }
-            send_to_discord(signal)
+    for trade in data['data'][:3]:  # TEMP: test first 3 trades
+        signal = {
+            "direction": trade['option_type'].upper(),
+            "strike": str(trade['strike']),
+            "expiration": trade['exp'],
+            "ticker": trade['ticker'],
+            "premium": float(trade['ask']) * 100
+        }
+        send_to_discord(signal)
 
 # === Loop every 5 minutes ===
 while True:
